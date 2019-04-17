@@ -12,7 +12,7 @@ jobs:
             echo $COLLAB_USERNAME >> credentials.txt
             echo $COLLAB_PASSWORD >> credentials.txt
 
-       - run:
+      - run:
           name: Run the script
           command: |
             bash .circleci/ubuntu1404-install.sh

@@ -13,23 +13,19 @@ jobs:
             echo $COLLAB_PASSWORD >> credentials.txt
 
       - run:
-          name: Run the script
+          name: Run the setup and preparation script
           command: |
             bash .circleci/ubuntu1404-install.sh
 
-#
-#      - run:
-#          name: Activate virtual env and run Gigantum
-#          command: |
-#            sudo mv .circleci/Arial.ttf /usr/share/fonts
-#            docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASSWORD
-#            sudo apt-get install python3.6-venv 
-#            python3.6 -m venv test-env
-#            source test-env/bin/activate
-#            pip install -r requirements.txt
-#            pip install gigantum
-#            gigantum install -e
-#            gigantum start -e
-#            sleep 10
-#            python3 driver.py 
+      - run:
+          name: Run Tests
+          command: |
+            python3.6 -m venv test-env
+            source test-env/bin/activate
+            pip install -r requirements.txt
+            pip install gigantum
+            gigantum install -e
+            gigantum start -e
+            sleep 10
+            python3 driver.py 
 

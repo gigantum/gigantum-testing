@@ -4,7 +4,6 @@ jobs:
     machine: true
     steps:
       - checkout
-
       - run:
           name: Set up credentials.txt for test user (circleci)
           command: |
@@ -17,6 +16,7 @@ jobs:
           name: Run the script
           command: |
             bash .circleci/ubuntu1404-install.sh
+
 #      - run:
 #          name: Install Python and Other Dependencies
 #          command: |

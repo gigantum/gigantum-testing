@@ -8,7 +8,7 @@ function install_python36 () {
     echo "Installing Python 3.6..."
     sudo add-apt-repository ppa:deadsnakes/ppa && sudo apt-get update
     sudo apt-get -y install libssl-dev libxss1 libappindicator1 libindicator7 libappindicator3-1
-    sudo apt-get -y install python3.6 python3-pip python3.6-venv
+    sudo apt-get -y install python3.6 python3-pip
     echo "Finished install Python 3.6."
 }
 
@@ -30,6 +30,7 @@ function install_chrome_utils () {
 
 function setup_venv () {
     docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASSWORD
+    sudo apt-get -y install python3.6-venv
     python3.6 -m venv test-env
     sudo mv .circleci/Arial.ttf /usr/share/fonts
     source test-env/bin/activate

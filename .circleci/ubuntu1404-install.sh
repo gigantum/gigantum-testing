@@ -25,7 +25,7 @@ function install_chrome_utils () {
     echo "Finished installing Chrome and Chromedriver."
 }
 
-function prepare_tes t() {
+function prepare_test () {
 }
 
 install_python36

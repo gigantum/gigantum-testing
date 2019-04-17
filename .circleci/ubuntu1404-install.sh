@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Fail on any bash command failure
+set -e
+
 
 function install_python36 () {
     echo "Installing Python 3.6..."

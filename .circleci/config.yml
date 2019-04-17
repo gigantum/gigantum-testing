@@ -6,29 +6,6 @@ jobs:
       - checkout
 
       - run:
-          name: Install Python and Other Dependencies
-          command: |
-            sudo add-apt-repository ppa:deadsnakes/ppa && sudo apt-get update
-            sudo apt-get -y install libssl-dev libxss1 libappindicator1 libindicator7 libappindicator3-1
-            sudo apt-get -y install python3.6 python3-pip python3-openssl
-            lsb_release -d
-
-      - run:
-          name: Install Chrome and ChromeDriver
-          command: |
-            wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-            sudo dpkg -i google-chrome*.deb
-            sudo apt-get -y install -f
-            sudo apt-get install xvfb
-            sudo rm -f chromedriver chromedriver_linux64.zip ~/bin/chromedriver /usr/bin/chromedriver /usr/local/bin/chromedriver
-            wget https://chromedriver.storage.googleapis.com/73.0.3683.68/chromedriver_linux64.zip
-            unzip chromedriver_linux64.zip && chmod +x chromedriver
-            sudo mv -f chromedriver /usr/local/share/chromedriver
-            sudo ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver
-            sudo ln -s /usr/local/share/chromedriver /usr/bin/chromedriver
-            chromedriver --version
-
-      - run:
           name: Set up credentials.txt for test user (circleci)
           command: |
             echo $TEST_USERNAME > credentials.txt
@@ -36,18 +13,45 @@ jobs:
             echo $COLLAB_USERNAME >> credentials.txt
             echo $COLLAB_PASSWORD >> credentials.txt
 
-      - run:
-          name: Activate virtual env and run Gigantum
+       - run:
+          name: Run the script
           command: |
-            sudo mv .circleci/Arial.ttf /usr/share/fonts
-            docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASSWORD
-            sudo apt-get install python3.6-venv 
-            python3.6 -m venv test-env
-            source test-env/bin/activate
-            pip install -r requirements.txt
-            pip install gigantum
-            gigantum install -e
-            gigantum start -e
-            sleep 10
-            python3 driver.py 
+            bash .circleci/ubuntu1404-install.sh
+#      - run:
+#          name: Install Python and Other Dependencies
+#          command: |
+#            sudo add-apt-repository ppa:deadsnakes/ppa && sudo apt-get update
+#            sudo apt-get -y install libssl-dev libxss1 libappindicator1 libindicator7 libappindicator3-1
+#            sudo apt-get -y install python3.6 python3-pip python3-openssl
+#            lsb_release -d
+#
+#      - run:
+#          name: Install Chrome and ChromeDriver
+#          command: |
+#            wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+#            sudo dpkg -i google-chrome*.deb
+#            sudo apt-get -y install -f
+#            sudo apt-get install xvfb
+#            sudo rm -f chromedriver chromedriver_linux64.zip ~/bin/chromedriver /usr/bin/chromedriver /usr/local/bin/chromedriver
+#            wget https://chromedriver.storage.googleapis.com/73.0.3683.68/chromedriver_linux64.zip
+#            unzip chromedriver_linux64.zip && chmod +x chromedriver
+#            sudo mv -f chromedriver /usr/local/share/chromedriver
+#            sudo ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver
+#            sudo ln -s /usr/local/share/chromedriver /usr/bin/chromedriver
+#            chromedriver --version
+#
+#      - run:
+#          name: Activate virtual env and run Gigantum
+#          command: |
+#            sudo mv .circleci/Arial.ttf /usr/share/fonts
+#            docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASSWORD
+#            sudo apt-get install python3.6-venv 
+#            python3.6 -m venv test-env
+#            source test-env/bin/activate
+#            pip install -r requirements.txt
+#            pip install gigantum
+#            gigantum install -e
+#            gigantum start -e
+#            sleep 10
+#            python3 driver.py 
 

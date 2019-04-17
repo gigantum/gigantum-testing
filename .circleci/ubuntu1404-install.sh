@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-function install_python36() {
+function install_python36 () {
     echo "Installing Python 3.6..."
     sudo add-apt-repository ppa:deadsnakes/ppa && sudo apt-get update
     sudo apt-get -y install libssl-dev libxss1 libappindicator1 libindicator7 libappindicator3-1
@@ -9,7 +9,7 @@ function install_python36() {
     echo "Finished install Python 3.6."
 }
 
-function install_chrome_utils() {
+function install_chrome_utils () {
     echo "Installing Google Chrome stable..."
     wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
     sudo dpkg -i google-chrome*.deb
@@ -25,7 +25,7 @@ function install_chrome_utils() {
     echo "Finished installing Chrome and Chromedriver."
 }
 
-function prepare_test() {
+function prepare_tes t() {
 }
 
 install_python36

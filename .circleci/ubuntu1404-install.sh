@@ -25,5 +25,17 @@ function install_chrome_utils () {
     echo "Finished installing Chrome and Chromedriver."
 }
 
+function setup_venv () {
+    docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASSWORD
+    python3.6 -m venv test-env
+    sudo mv .circleci/Arial.ttf /usr/share/fonts
+    source test-env/bin/activate
+    pip install -r requirements.txt
+    pip install gigantum
+    gigantum install -e
+    gigantum start -e
+}
+
 install_python36
 install_chrome_utils
+setup_venv

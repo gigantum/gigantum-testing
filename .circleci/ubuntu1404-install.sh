@@ -29,6 +29,7 @@ function install_chrome_utils () {
 }
 
 function setup_venv () {
+    sudo mv .circleci/Arial.ttf /usr/share/fonts
     docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASSWORD
     sudo apt-get -y install python3.6-venv
 }

@@ -45,27 +45,6 @@ def prep_base(driver, base_button_check, skip_login=False):
     return ProjectPrepResponse(username=username, project_name=proj_name)
 
 
-def create_project_without_base(driver: selenium.webdriver) -> str:
-    """
-    Create a project without a base.
-
-    Args:
-        driver
-
-    Returns:
-        Name of project just created
-    """
-    unique_project_name = testutils.unique_project_name()
-    logging.info(f"Creating a new project: {unique_project_name}")
-    project_elts = elements.AddProjectElements(driver)
-    project_elts.create_new_button.click()
-    project_elts.project_title_input.click()
-    project_elts.project_title_input.send_keys(unique_project_name)
-    project_elts.project_description_input.click()
-    project_elts.project_description_input.send_keys(testutils.unique_project_description())
-    project_elts.project_continue_button.click()
-    return unique_project_name
-
 
 def select_project_base(driver, button_elt):
     base_elts = elements.AddProjectBaseElements(driver)

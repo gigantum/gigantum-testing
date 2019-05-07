@@ -110,19 +110,36 @@ class GuideElements(UiComponent):
 class AddProjectElements(UiComponent):
     @property
     def create_new_button(self):
-        return self.driver.find_element_by_css_selector(".btn--import")
+        return CssElement(self.driver, ".btn--import")
 
     @property
     def project_title_input(self):
-        return self.driver.find_element_by_css_selector(".CreateLabbook input")
+        return CssElement(self.driver, ".CreateLabbook input")
 
     @property
     def project_description_input(self):
-        return self.driver.find_element_by_css_selector(".CreateLabbook__description-input")
+        return CssElement(self.driver, ".CreateLabbook__description-input")
 
     @property
     def project_continue_button(self):
         return self.driver.find_element_by_xpath("//button[contains(text(), 'Continue')]")
+
+    def create_project_without_base(self) -> str:
+        """
+        Create a project without a base.
+
+        Returns:
+            Name of project just created
+        """
+        unique_project_name = testutils.unique_project_name()
+        logging.info(f"Creating a new project: {unique_project_name}")
+        self.create_new_button.click()
+        self.project_title_input.click()
+        self.project_title_input.send_keys(unique_project_name)
+        self.project_description_input.click()
+        self.project_description_input.send_keys(testutils.unique_project_description())
+        self.project_continue_button.click()
+        return unique_project_name
 
 
 class AddProjectBaseElements(UiComponent):

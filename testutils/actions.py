@@ -74,11 +74,21 @@ def log_in(driver: selenium.webdriver, user_index: int = 0) -> str:
         Username of user just logged in
     """
     username, password = testutils.load_credentials(user_index=user_index)
+
     driver.get(f"{os.environ['GIGANTUM_HOST']}/projects/local#")
-
+    time.sleep(2)
     auth0_elts = elements.Auth0LoginElements(driver)
+    auth0_elts.login_green_button.find().click()
+    time.sleep(2)
+    try:
+        if auth0_elts.auth0_lock_button.find():
+            logging.info("clicking 'Not your account?'")
+            auth0_elts.not_your_account_button.find().click()
+    except Exception as e:
+        logging.warning(e)
+        pass
+    time.sleep(2)
     auth0_elts.do_login(username, password)
-
     time.sleep(5)
     # Set the ID and ACCESS TOKENS -- Used as headers for GraphQL mutations
     access_token = driver.execute_script("return window.localStorage.getItem('access_token')")
@@ -199,8 +209,11 @@ def delete_project_cloud(driver: selenium.webdriver, project_title):
     logging.info(f"Removing project {project_title} from cloud")
     publish_elts = elements.PublishProjectElements(driver)
     publish_elts.project_page_tab.click()
+    time.sleep(2)
     publish_elts.cloud_tab.click()
     time.sleep(2)
+    wait = WebDriverWait(driver, 200)
+    wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".RemoteLabbooks__panel-title")))
     publish_elts.delete_project_button.click()
     time.sleep(2)
     publish_elts.delete_project_input.send_keys(project_title)

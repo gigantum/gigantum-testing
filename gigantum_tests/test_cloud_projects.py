@@ -46,8 +46,12 @@ def test_publish_sync_delete_project(driver: selenium.webdriver, *args, **kwargs
     file_browser_elts.drag_drop_file_in_drop_zone()
     cloud_project_elts.sync_cloud_project(project_title)
 
-    assert "Sync complete" in cloud_project_elts.sync_cloud_project_message.find().text, \
-        "Expected 'Sync complete' in footer"
+    for ntries in range(5):
+        if "Sync complete" in cloud_project_elts.sync_cloud_project_message.find().text:
+            break
+        time.sleep(1)
+    else:
+        assert False, "Expected 'Sync complete' in footer"
 
     # Delete cloud project
     cloud_project_elts.delete_cloud_project(project_title)

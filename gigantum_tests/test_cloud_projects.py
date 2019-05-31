@@ -21,7 +21,7 @@ def test_publish_sync_delete_project(driver: selenium.webdriver, *args, **kwargs
     cloud_project_elts.publish_private_project(project_title)
     logging.info(f"Navigating to {username}'s Cloud tab")
     driver.get(f"{os.environ['GIGANTUM_HOST']}/projects/cloud")
-    cloud_project_elts.first_cloud_project.wait()
+    cloud_project_elts.first_cloud_project.wait(30)
     first_cloud_project = cloud_project_elts.first_cloud_project.find().text
     logging.info(f"Found first cloud project {first_cloud_project}")
 

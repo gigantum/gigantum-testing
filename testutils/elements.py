@@ -190,11 +190,11 @@ class EnvironmentElements(UiComponent):
 
     @property
     def add_packages_button(self):
-        return CssElement(self.driver, ".PackageDependencies__addPackage")
+        return CssElement(self.driver, ".Btn__plus--featurePosition")
 
     @property
     def package_name_input(self):
-        return CssElement(self.driver, ".PackageDependencies__input")
+        return CssElement(self.driver, "#packageNameInput")
 
     @property
     def version_name_input(self):
@@ -202,15 +202,23 @@ class EnvironmentElements(UiComponent):
 
     @property
     def add_button(self):
-        return CssElement(self.driver, ".Btn--round")
+        return CssElement(self.driver,".AddPackageForm__entry-buttons")
 
     @property
     def install_packages_button(self):
-        return CssElement(self.driver, ".PackageDependencies__btn--absolute")
+        return CssElement(self.driver, ".PackageQueue__buttons")
 
     @property
-    def package_info_table(self):
-        return CssElement(self.driver, ".PackageDependencies__table")
+    def package_info_table_version_one(self):
+        return CssElement(self.driver, f".PackageRow:nth-child(1) .PackageRow__version")
+
+    @property
+    def package_info_table_version_two(self):
+        return CssElement(self.driver, f".PackageRow:nth-child(2) .PackageRow__version")
+
+    @property
+    def package_info_table_version_three(self):
+        return CssElement(self.driver, f".PackageRow:nth-child(3) .PackageRow__version")
 
     @property
     def custom_docker_edit_button(self):
@@ -224,10 +232,34 @@ class EnvironmentElements(UiComponent):
     def custom_docker_save_button(self):
         return CssElement(self.driver, ".CustomDockerfile__content-save-button")
 
+    @property
+    def package_manager_dropdown(self):
+        return CssElement(self.driver,".Dropdown")
+
+    @property
+    def conda_package_manager_dropdown(self):
+        return CssElement(self.driver,".Dropdown__item:nth-child(2)")
+
+    @property
+    def apt_package_manager_dropdown(self):
+        return CssElement(self.driver,".Dropdown__item:nth-child(3)")
+
+    @property
+    def close_install_window(self):
+        return CssElement(self.driver,".align-self--end:nth-child(3)")
+
+    def get_all_versions(self):
+        versions=[]
+        versions.append(self.package_info_table_version_one.wait().text)
+        versions.append(self.package_info_table_version_two.wait().text)
+        versions.append(self.package_info_table_version_three.wait().text)
+        versions.reverse()
+        return versions
+
+
     def add_pip_packages(self, *pip_packages):
         logging.info("Adding pip packages")
         self.environment_tab_button.wait().click()
-        time.sleep(3)
         self.driver.execute_script("window.scrollBy(0, -400);")
         self.driver.execute_script("window.scrollBy(0, 400);")
         self.add_packages_button.wait().click()
@@ -235,11 +267,54 @@ class EnvironmentElements(UiComponent):
             logging.info(f"Adding pip package {pip_pack}")
             self.package_name_input.find().send_keys(pip_pack)
             self.add_button.wait().click()
-        self.install_packages_button.wait().click()
+        # Added sleep to wait for packages to finish validating
+        time.sleep(6)
+        self.install_packages_button.wait(10).click()
+        self.close_install_window.wait().click()
+        container_elts = ContainerElements(self.driver)
+        container_elts.container_status_stopped.wait(120)
+
+    def add_conda_packages(self, *conda_packages):
+        logging.info("Adding conda packages")
+        self.environment_tab_button.wait().click()
+        self.driver.execute_script("window.scrollBy(0, -400);")
+        self.driver.execute_script("window.scrollBy(0, 400);")
+        self.add_packages_button.wait().click()
+        self.package_manager_dropdown.wait().click()
+        self.conda_package_manager_dropdown.wait().click()
+        for con_pack in conda_packages:
+            logging.info(f"Adding conda package {con_pack}")
+            self.package_name_input.find().send_keys(con_pack)
+            self.add_button.wait().click()
+        # conda packages tend to take longer to validate than pip
         time.sleep(10)
-        wait = selenium.webdriver.support.ui.WebDriverWait(self.driver, 60)
-        wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".flex>.Stopped")))
-        time.sleep(5)
+        self.install_packages_button.wait(10).click()
+        self.close_install_window.wait().click()
+        container_elts = ContainerElements(self.driver)
+        container_elts.container_status_stopped.wait(120)
+
+
+    '''Timing should be adjusted before use
+     should be reintroduced when apt functions properly
+    
+    def add_apt_packages(self, *apt_packages):
+        logging.info("Adding conda packages")
+        self.environment_tab_button.wait().click()
+        self.driver.execute_script("window.scrollBy(0, -400);")
+        self.driver.execute_script("window.scrollBy(0, 400);")
+        self.add_packages_button.wait().click()
+        self.package_manager_dropdown.wait().click()
+        self.conda_package_manager_dropdown.wait().click()
+        for con_pack in con_packages:
+            logging.info(f"Adding conda package {con_pack}")
+            self.package_name_input.find().send_keys(con_pack)
+            self.add_button.wait().click()
+        time.sleep(10)
+        self.install_packages_button.wait(10).click()
+        self.close_install_window.wait().click()
+        container_elts = ContainerElements(self.driver)
+        container_elts.container_status_stopped.wait(60)
+    '''
 
     def add_custom_docker_instructions(self, docker_instruction):
         logging.info("Adding custom Docker instruction")

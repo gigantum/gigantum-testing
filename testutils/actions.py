@@ -30,18 +30,17 @@ def prep_base(driver, base_button_check, skip_login=False):
     username = None
     if skip_login is False:
         username = log_in(driver)
-        time.sleep(2)
         elements.GuideElements(driver).remove_guide()
     else:
         time.sleep(2)
     proj_name = create_project_without_base(driver)
     time.sleep(2)
     select_project_base(driver, base_button_check())
-    wait = selenium.webdriver.support.ui.WebDriverWait(driver, 200)
-    wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".flex>.Stopped")))
+
     # assert container status is stopped
-    container_elts = elements.FileBrowserElements(driver)
-    assert container_elts.container_status_stopped.wait().is_displayed(), "Expected stopped container"
+    project_elts = elements.ProjectControlElements(driver)
+    # This will throw an exception on time-out
+    project_elts.container_status_stopped.wait(200).is_displayed()
 
     return ProjectPrepResponse(username=username, project_name=proj_name)
 
@@ -97,18 +96,12 @@ def log_in(driver: selenium.webdriver, user_index: int = 0) -> str:
     username, password = testutils.load_credentials(user_index=user_index)
 
     driver.get(f"{os.environ['GIGANTUM_HOST']}/projects/local#")
-    time.sleep(2)
     auth0_elts = elements.Auth0LoginElements(driver)
-    auth0_elts.login_green_button.find().click()
-    time.sleep(2)
-    try:
-        if auth0_elts.auth0_lock_button.find():
-            logging.info("Clicking 'Not your account?'")
-            auth0_elts.not_your_account_button.find().click()
-    except Exception as e:
-        logging.warning(e)
-        pass
-    time.sleep(2)
+    auth0_elts.login_green_button.wait().click()
+    auth0_elts.auth0_lock_widget.wait()
+    if auth0_elts.auth0_lock_button.selector_exists():
+        logging.info("Clicking 'Not your account?'")
+        auth0_elts.not_your_account_button.wait().click()
     auth0_elts.do_login(username, password)
     time.sleep(5)
     # Set the ID and ACCESS TOKENS -- Used as headers for GraphQL mutations

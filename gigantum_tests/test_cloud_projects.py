@@ -108,8 +108,8 @@ def test_publish_collaborator(driver: selenium.webdriver, *args, ** kwargs):
         f"but instead got {first_cloud_project}"
 
     cloud_project_elts.import_first_cloud_project_button.find().click()
-    container_elts = testutils.ContainerElements(driver)
-    container_elts.container_status_stopped.wait(30)
+    project_control = testutils.ProjectControlElements(driver)
+    project_control.container_status_stopped.wait(30)
     shared_project_title = cloud_project_elts.project_overview_project_title.find().text
 
     assert project_title in shared_project_title, \

@@ -1,12 +1,4 @@
-# Builtin imports
-import subprocess
-import logging
-import shutil
-import time
 import uuid
-import glob
-import uuid
-import sys
 import os
 
 from functools import wraps
@@ -14,9 +6,6 @@ from functools import wraps
 # Library imports
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 
 def TestTags(*taglist):

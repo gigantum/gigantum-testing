@@ -1,19 +1,21 @@
 import logging
-from typing import List, Tuple
 import time
+import os
 
 import selenium
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.common.action_chains import ActionChains
 
-from .testutils import *
-from .graphql import list_remote_datasets, list_remote_projects
+from .testutils import unique_project_description, load_credentials
+from .graphql import list_remote_datasets
 
 
-class CssElement(object):
-    def __init__(self, driver, selector: str):
+class CssElement:
+    def __init__(self, driver: selenium.webdriver, selector: str):
         self.driver = driver
         self.selector = selector
 
@@ -21,8 +23,17 @@ class CssElement(object):
         return self.find()
 
     def find(self):
-        """Immediately try to find and return the element. """
+        """Immediately try to find and return the element.
+
+        raises NoSuchElementException if selector doesn't match anything"""
         return self.driver.find_element_by_css_selector(self.selector)
+
+    def click(self):
+        """Immediately try to find and return the element. """
+        return self.find().click()
+
+    def is_displayed(self):
+        return self.find().is_displayed()
 
     def wait(self, nsec: int = 10):
         """Block until the element is visible, and then return it. """
@@ -30,7 +41,7 @@ class CssElement(object):
         try:
             wait = WebDriverWait(self.driver, nsec)
             time.sleep(0.1)
-            wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, self.selector)))
+            wait.until(expected_conditions.visibility_of_element_located((By.CSS_SELECTOR, self.selector)))
             return self.find()
         except Exception as e:
             tf = time.time()
@@ -41,9 +52,21 @@ class CssElement(object):
             else:
                 raise e
 
+    def selector_exists(self) -> bool:
+        try:
+            # This throws an exception if it fails
+            self.find()
+            return True  # i.e., Query succeeded
+        except NoSuchElementException:
+            return False
 
-class UiComponent(object):
-    def __init__(self, driver):
+    def contains_text(self, text: str) -> bool:
+        """Does *text* exist in the text of the specified element?"""
+        return text in self.find().text
+
+
+class UiComponent:
+    def __init__(self, driver: selenium.webdriver):
         self.driver = driver
 
 
@@ -52,6 +75,9 @@ class Auth0LoginElements(UiComponent):
     def login_green_button(self):
         return CssElement(self.driver, ".Login__button")
 
+    @property
+    def auth0_lock_widget(self):
+        return CssElement(self.driver, "form.auth0-lock-widget")
     @property
     def auth0_lock_button(self):
         return CssElement(self.driver, ".auth0-lock-social-button")
@@ -125,8 +151,8 @@ class GuideElements(UiComponent):
             logging.info("Getting rid of 'Got it!'")
             self.got_it_button.wait().click()
             logging.info("Turning off guide and helper")
-            self.guide_button.wait(5).click()
-            self.helper_button.wait(5).click()
+            self.guide_button.wait().click()
+            self.helper_button.wait().click()
         except Exception as e:
             logging.warning(e)
 
@@ -179,7 +205,7 @@ class AddProjectBaseElements(UiComponent):
         return self.driver.find_element_by_css_selector("h6[data-name='r-tidyverse']")
 
     @property
-    def r_studio_base_button(self):
+    def rstudio_base_button(self):
         return self.driver.find_element_by_css_selector("h6[data-name='rstudio-server']")
 
 
@@ -271,8 +297,8 @@ class EnvironmentElements(UiComponent):
         time.sleep(6)
         self.install_packages_button.wait(10).click()
         self.close_install_window.wait().click()
-        container_elts = ContainerElements(self.driver)
-        container_elts.container_status_stopped.wait(120)
+        project_control = ProjectControlElements(self.driver)
+        project_control.container_status_stopped.wait(120)
 
     def add_conda_packages(self, *conda_packages):
         logging.info("Adding conda packages")
@@ -290,8 +316,8 @@ class EnvironmentElements(UiComponent):
         time.sleep(10)
         self.install_packages_button.wait(10).click()
         self.close_install_window.wait().click()
-        container_elts = ContainerElements(self.driver)
-        container_elts.container_status_stopped.wait(120)
+        project_control = ProjectControlElements(self.driver)
+        project_control.container_status_stopped.wait(120)
 
 
     '''Timing should be adjusted before use
@@ -331,10 +357,6 @@ class EnvironmentElements(UiComponent):
 
 class JupyterLabElements(UiComponent):
     @property
-    def jupyterlab_launch_button(self):
-        return CssElement(self.driver, ".DevTools__btn--launch")
-
-    @property
     def jupyter_notebook_button(self):
         return CssElement(self.driver, ".jp-LauncherCard-label")
 
@@ -350,16 +372,44 @@ class JupyterLabElements(UiComponent):
     def code_output(self):
         return CssElement(self.driver, ".jp-OutputArea-output>pre")
 
-    def create_jupyter_notebook(self):
-        logging.info("Switching to JupyterLab")
-        self.jupyterlab_launch_button.find().click()
-        # The time it takes to open JupyterLab is inconsistent, so a long wait is necessary
-        time.sleep(35)
-        window_handles = self.driver.window_handles
-        self.driver.switch_to.window(window_handles[1])
-        time.sleep(5)
-        self.jupyter_notebook_button.wait().click()
-        time.sleep(5)
+
+
+
+class RStudioElements(UiComponent):
+    @property
+    def some_selected_tab(self):
+        """A selector to let us wait until tabs are populated"""
+        return CssElement(self.driver, ".gwt-TabLayoutPanelTab-selected")
+
+    @property
+    def selected_files_tab(self):
+        """A compound selector for the *files* tab ONLY if it's selected"""
+        return CssElement(self.driver, ".gwt-TabLayoutPanelTab-selected #rstudio_workbench_tab_files")
+
+    @property
+    def selected_plots_tab(self):
+        """A compound selector for the *plots* tab ONLY if it's selected"""
+        return CssElement(self.driver, ".gwt-TabLayoutPanelTab-selected #rstudio_workbench_tab_plots")
+
+    @property
+    def new_button(self):
+        """The "New" / "+" button"""
+        return CssElement(self.driver, 'div.rstheme_toolbarWrapper > table table td')
+
+    @property
+    def r_notebook(self):
+        """The R Notebook button - visible only after `new_button` is clicked"""
+        return CssElement(self.driver, 'table#rstudio_label_r_notebook_command')
+
+    def new_notebook(self):
+        """Create a new notebook"""
+        self.new_button.click()
+        self.r_notebook.wait().click()
+
+    def ctrl_shift_enter(self, actions):
+        """Useful for executing a code block"""
+        return actions.key_down(Keys.SHIFT).key_down(Keys.CONTROL).send_keys(Keys.ENTER) \
+            .key_up(Keys.SHIFT).key_up(Keys.CONTROL).perform()
 
 
 class ImportProjectElements(UiComponent):
@@ -373,6 +423,7 @@ class ImportProjectElements(UiComponent):
 
     @property
     def import_button(self):
+        # TODO This needs to be made more specific
         return CssElement(self.driver, "button~button")
 
     @property
@@ -412,10 +463,6 @@ class DatasetElements(UiComponent):
     @property
     def gigantum_cloud_button(self):
         return self.driver.find_element_by_css_selector(".BaseCard")
-
-    @property
-    def create_dataset_button(self):
-        return self.driver.find_element_by_css_selector("button[data-selenium-id = 'ButtonLoader']")
 
     @property
     def data_tab(self):
@@ -480,7 +527,7 @@ class DatasetElements(UiComponent):
         self.managed_cloud_card_selector.wait().click()
         self.create_dataset_button.wait().click()
         wait = WebDriverWait(self.driver, 20)
-        wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".TitleSection")))
+        wait.until(expected_conditions.visibility_of_element_located((By.CSS_SELECTOR, ".TitleSection")))
         logging.info(f"Finished creating dataset {dataset_name}")
         return dataset_name
 
@@ -653,8 +700,8 @@ class CloudProjectElements(UiComponent):
         self.publish_project_button.wait().click()
         self.publish_confirm_button.wait().click()
         time.sleep(5)
-        container_elts = ContainerElements(self.driver)
-        container_elts.container_status_stopped.wait(30)
+        project_control= ProjectControlElements(self.driver)
+        project_control.container_status_stopped.wait(30)
         time.sleep(10)
 
     def add_collaborator_with_permissions(self, project_title, permissions="read"):
@@ -684,8 +731,8 @@ class CloudProjectElements(UiComponent):
         logging.info(f"Syncing cloud project {project_title}")
         self.sync_cloud_project_button.find().click()
         time.sleep(5)
-        container_elts = ContainerElements(self.driver)
-        container_elts.container_status_stopped.wait()
+        project_control = ProjectControlElements(self.driver)
+        project_control.container_status_stopped.wait()
 
     def delete_cloud_project(self, project_title):
         logging.info(f"Deleting cloud project {project_title}")
@@ -697,6 +744,51 @@ class CloudProjectElements(UiComponent):
         self.delete_cloud_project_input.wait().send_keys(project_title)
         self.delete_cloud_project_confirm_button.wait().click()
         time.sleep(10)
+
+
+class ProjectControlElements(UiComponent):
+    @property
+    def container_status_stopped(self):
+        return CssElement(self.driver, ".flex>.Stopped")
+
+    @property
+    def container_status_building(self):
+        return CssElement(self.driver, ".flex>.Building")
+
+    @property
+    def devtool_launch_button(self):
+        return CssElement(self.driver, ".DevTools__btn--launch")
+
+    def launch_devtool(self, tool_name='dev tool'):
+        """Launch a dev tool, then switch to it
+
+        tool_name:
+            Name of the dev tool, used only for messages
+        """
+        logging.info(f"Switching to {tool_name}")
+        self.devtool_launch_button.wait().click()
+        self.open_devtool_tab(tool_name)
+
+    def open_devtool_tab(self, tool_name='dev tool') -> None:
+        """Wait for a new tab, then switch to it
+
+        tool_name:
+            Name of the dev tool, used only in Exception message
+        """
+        # Starting a dev tool may take a long time, hence the 35 second timeout
+        waiting_start = time.time()
+        window_handles = self.driver.window_handles
+        while len(window_handles) == 1:
+            window_handles = self.driver.window_handles
+            if time.time() - waiting_start > 35:
+                raise ValueError(f'Timed out waiting for {tool_name} tab (35 second max)')
+
+        self.driver.switch_to.window(window_handles[1])
+
+    def open_gigatab(self) -> None:
+        """Switch to the Gigantum Client"""
+        window_handles = self.driver.window_handles
+        self.driver.switch_to.window(window_handles[0])
 
 
 class FileBrowserElements(UiComponent):
@@ -745,10 +837,6 @@ class FileBrowserElements(UiComponent):
         return CssElement(self.driver, ".Btn__Favorite-on")
 
     @property
-    def container_status_stopped(self):
-        return CssElement(self.driver, ".flex>.Stopped")
-
-    @property
     def link_dataset_button(self):
         return CssElement(self.driver, 'button[data-tooltip="Link Dataset"]')
 
@@ -771,17 +859,23 @@ class FileBrowserElements(UiComponent):
         self.driver.find_element_by_css_selector(".LinkCard__details").click()
         time.sleep(4)
         wait = WebDriverWait(self.driver, 200)
-        wait.until(EC.invisibility_of_element_located((By.CSS_SELECTOR, ".Footer__message-title")))
+        wait.until(expected_conditions.invisibility_of_element_located((By.CSS_SELECTOR, ".Footer__message-title")))
         self.driver.find_element_by_css_selector(".ButtonLoader ").click()
         # wait the linking window to disappear
-        wait.until(EC.invisibility_of_element_located((By.CSS_SELECTOR, ".LinkModal__container")))
+        wait.until(expected_conditions.invisibility_of_element_located((By.CSS_SELECTOR, ".LinkModal__container")))
 
 
-class ContainerElements(UiComponent):
+class ActivityElements(UiComponent):
     @property
-    def container_status_building(self):
-        return CssElement(self.driver, ".flex>.Building")
+    def link_activity_tab(self):
+        return CssElement(self.driver, 'li#activity > a')
 
     @property
-    def container_status_stopped(self):
-        return CssElement(self.driver, ".flex>.Stopped")
+    def first_card_label(self):
+        return CssElement(self.driver, "h6.ActivityCard__commit-message")
+
+    @property
+    def first_card_img(self):
+        """Returns the first img in an Activity Detail List - not necessarily from the first list!"""
+        return CssElement(self.driver, "li.DetailsRecords__item img")
+

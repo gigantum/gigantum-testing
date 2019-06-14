@@ -112,8 +112,8 @@ def prep_merge_conflict(driver: selenium.webdriver, *args, **kwargs):
     time.sleep(2)
     cloud_project_elts.first_cloud_project.wait(30)
     cloud_project_elts.import_first_cloud_project_button.find().click()
-    container_elts = testutils.ContainerElements(driver)
-    container_elts.container_status_stopped.wait(30)
+    project_control = testutils.ProjectControlElements(driver)
+    project_control.container_status_stopped.wait(30)
 
     # Collaborator adds a file, syncs, and logs out
     logging.info(f"Navigating to {collaborator}'s Input Data tab")

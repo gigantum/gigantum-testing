@@ -42,8 +42,15 @@ def test_base_rtidy(driver: selenium.webdriver, *args, **kwargs):
 
 def test_base_rstudio(driver: selenium.webdriver, *args, **kwargs):
     """
-    Test the creation of a project with a RStudio base.
+    Add an RStudio base.
+
+    Args:
+        driver
     """
-    b = lambda: \
-        testutils.elements.AddProjectBaseElements(driver).r_studio_base_button
+    def b():
+        return testutils.elements.AddProjectBaseElements(driver).rstudio_base_button
+
     testutils.prep_base(driver, b)
+
+
+prep_base_rstudio = test_base_rstudio

@@ -65,6 +65,31 @@ class CssElement:
         return text in self.find().text
 
 
+class XpathElement(CssElement):
+    def find(self):
+        """Immediately try to find and return the element.
+
+        raises NoSuchElementException if selector doesn't match anything"""
+        return self.driver.find_element_by_xpath(self.selector)
+
+    def wait(self, nsec: int = 10):
+        """Block until the element is visible, and then return it. """
+        t0 = time.time()
+        try:
+            wait = WebDriverWait(self.driver, nsec)
+            time.sleep(0.1)
+            wait.until(expected_conditions.visibility_of_element_located((By.XPATH, self.selector)))
+            return self.find()
+        except Exception as e:
+            tf = time.time()
+            m = f'Timed out finding {self.selector} after {tf-t0:.1f}sec'
+            logging.error(m)
+            if not str(e).strip():
+                raise ValueError(m)
+            else:
+                raise e
+
+
 class UiComponent:
     def __init__(self, driver: selenium.webdriver):
         self.driver = driver
@@ -78,6 +103,7 @@ class Auth0LoginElements(UiComponent):
     @property
     def auth0_lock_widget(self):
         return CssElement(self.driver, "form.auth0-lock-widget")
+
     @property
     def auth0_lock_button(self):
         return CssElement(self.driver, ".auth0-lock-social-button")
@@ -373,8 +399,6 @@ class JupyterLabElements(UiComponent):
         return CssElement(self.driver, ".jp-OutputArea-output>pre")
 
 
-
-
 class RStudioElements(UiComponent):
     @property
     def some_selected_tab(self):
@@ -401,12 +425,32 @@ class RStudioElements(UiComponent):
         """The R Notebook button - visible only after `new_button` is clicked"""
         return CssElement(self.driver, 'table#rstudio_label_r_notebook_command')
 
+    @property
+    def save_button(self):
+        """The button itself"""
+        return CssElement(self.driver, 'button[title="Save current document (Ctrl+S)"]')
+
+    @property
+    def tidyverse_probably_imported(self):
+        return XpathElement(self.driver, "//span[contains(text(), '::lag()')]")
+
     def new_notebook(self):
         """Create a new notebook"""
         self.new_button.click()
         self.r_notebook.wait().click()
 
-    def ctrl_shift_enter(self, actions):
+    def save_unsaved_notebook(self, fname: str) -> None:
+        """Save current notebook assuming we'll need a filename, etc.
+
+        fname:
+            Name of notebook
+        """
+        self.save_button.click()
+        time.sleep(0.1)
+        actions = ActionChains(self.driver)
+        actions.send_keys(fname).send_keys(Keys.ENTER).send_keys(Keys.ENTER).perform()
+
+    def ctrl_shift_enter(self, actions) -> None:
         """Useful for executing a code block"""
         return actions.key_down(Keys.SHIFT).key_down(Keys.CONTROL).send_keys(Keys.ENTER) \
             .key_up(Keys.SHIFT).key_up(Keys.CONTROL).perform()

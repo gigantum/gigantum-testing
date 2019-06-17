@@ -86,8 +86,13 @@ def test_rstudio_session(driver: selenium.webdriver, *args, **kwargs):
     # There's probably some more paradigmatic way to do this, but this should work fine enough for now
     rstudio_elements.ctrl_shift_enter(actions)
 
-    # If we run the below before the above finishes, it doesn't appear to work
-    time.sleep(1)
+    time.sleep(0.5)
+
+    logging.info("Saving notebook")
+    rstudio_elements.save_unsaved_notebook('test.Rmd')
+
+    # If we run the below too quickly after the first snippet, ggplot doesn't execute
+    rstudio_elements.tidyverse_probably_imported.wait()
 
     logging.info("Creating a ggplot graph in notebook")
     actions = ActionChains(driver).send_keys(Keys.ARROW_DOWN) \

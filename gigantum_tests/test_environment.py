@@ -30,6 +30,7 @@ def test_pip_packages(driver: selenium.webdriver, *args, **kwargs):
 
     #Open JupyterLab and create Jupyter notebook
     project_control = testutils.ProjectControlElements(driver)
+    project_control.container_status_stopped.wait(120)
     project_control.launch_devtool('JupyterLab')
     jupyterlab_elts = testutils.JupyterLabElements(driver)
     # TODO DC This seems unnecessary given the wait below

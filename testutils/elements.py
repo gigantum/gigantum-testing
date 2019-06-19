@@ -297,6 +297,7 @@ class EnvironmentElements(UiComponent):
         time.sleep(6)
         self.install_packages_button.wait(10).click()
         self.close_install_window.wait().click()
+        time.sleep(1)
         project_control = ProjectControlElements(self.driver)
         project_control.container_status_stopped.wait(120)
 
@@ -316,8 +317,9 @@ class EnvironmentElements(UiComponent):
         time.sleep(10)
         self.install_packages_button.wait(10).click()
         self.close_install_window.wait().click()
+        time.sleep(1)
         project_control = ProjectControlElements(self.driver)
-        project_control.container_status_stopped.wait(120)
+        project_control.container_status_stopped.wait(240)
 
 
     '''Timing should be adjusted before use
@@ -424,7 +426,7 @@ class ImportProjectElements(UiComponent):
     @property
     def import_button(self):
         # TODO This needs to be made more specific
-        return CssElement(self.driver, "button~button")
+        return CssElement(self.driver, ".Btn--last")
 
     @property
     def overview_tab(self):
@@ -524,8 +526,6 @@ class DatasetElements(UiComponent):
         self.dataset_description_input().click()
         self.dataset_description_input().send_keys(unique_project_description())
         self.dataset_continue_button().click()
-        self.managed_cloud_card_selector.wait().click()
-        self.create_dataset_button.wait().click()
         wait = WebDriverWait(self.driver, 20)
         wait.until(expected_conditions.visibility_of_element_located((By.CSS_SELECTOR, ".TitleSection")))
         logging.info(f"Finished creating dataset {dataset_name}")
@@ -854,6 +854,8 @@ class FileBrowserElements(UiComponent):
     def link_dataset(self, ds_owner: str, ds_name: str):
         logging.info("Linking the dataset to project")
         self.input_data_tab.wait().click()
+        project_control = ProjectControlElements(self.driver)
+        project_control.container_status_stopped.wait(120)
         self.link_dataset_button.wait().click()
         time.sleep(4)
         self.driver.find_element_by_css_selector(".LinkCard__details").click()

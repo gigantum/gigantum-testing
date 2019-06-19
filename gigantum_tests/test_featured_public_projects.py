@@ -19,6 +19,7 @@ def test_featured_public_projects(driver: selenium.webdriver, *args, **kwargs):
     # TODO - add in gigantum.com/randal/baltimore-sun-data-bridge-data
     featured_public_projects = ["gigantum.com/meg297/military-expenditure-gdp-population",
                                 "gigantum.com/billvb/fsw-telecoms-study"]
+
     for project in featured_public_projects:
         logging.info(f"Importing featured public project: {project}")
         import_project_elts = testutils.ImportProjectElements(driver)

@@ -1,5 +1,7 @@
 # Gigantum Testing
 
+**NOTE: THIS REPOSITORY HAS BEEN INTEGRATED INTO THE GIGANTUM-CLIENT REPOSITORY AND IS NO LONGER USED**
+
 Automation of Gigantum testing with Selenium.
 
 
